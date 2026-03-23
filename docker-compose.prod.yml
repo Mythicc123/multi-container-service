@@ -1,8 +1,6 @@
 services:
   api:
-    build:
-      context: ./app
-      dockerfile: Dockerfile
+    image: ${DOCKER_IMAGE}
     environment:
       - MONGO_URL=mongodb://mongo:27017/todos
       - PORT=3000
