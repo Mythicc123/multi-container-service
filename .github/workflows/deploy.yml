@@ -69,7 +69,7 @@ jobs:
 
       - name: Create SSH key file
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/ec2_key
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/ec2_key
           chmod 600 /tmp/ec2_key
 
       - name: Install Ansible Galaxy collections
