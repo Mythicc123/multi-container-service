@@ -1,32 +1,20 @@
 const mongoose = require('mongoose');
 const request = require('supertest');
 
-// Mock mongoose before requiring the app
-jest.mock('mongoose', () => {
-  const actualMongoose = jest.requireActual('mongoose');
-  return {
-    ...actualMongoose,
-    connect: jest.fn().mockResolvedValue(undefined),
-  };
-});
-
 const Todo = require('../src/models/Todo');
 const app = require('../src/index');
 
-let createdId;
-
 beforeAll(async () => {
   await mongoose.connect(process.env.MONGO_URL || 'mongodb://localhost:27017/todos_test');
-});
+}, 30000);
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
   await mongoose.disconnect();
-});
+}, 15000);
 
 beforeEach(async () => {
   await Todo.deleteMany({});
-});
+}, 15000);
 
 describe('Todo API', () => {
   it('GET /todos returns empty array initially', async () => {
@@ -43,7 +31,6 @@ describe('Todo API', () => {
     expect(res.body.title).toBe('Learn Docker');
     expect(res.body.completed).toBe(false);
     expect(res.body._id).toBeDefined();
-    createdId = res.body._id;
   });
 
   it('GET /todos/:id returns a single todo', async () => {
