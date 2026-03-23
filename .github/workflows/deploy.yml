@@ -61,7 +61,7 @@ jobs:
         run: |
           cat > /tmp/ansible_inventory << EOF
           [servers]
-          app-server ansible_host=${{ steps.ec2.outputs.ip }} ansible_user=ubuntu ansible_ssh_private_key_file=/tmp/ec2_key
+          app-server ansible_host=${{ steps.ec2.outputs.ip }} ansible_user=ubuntu ansible_ssh_private_key_file=/tmp/ec2_key ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 
           [servers:vars]
           ansible_python_interpreter=/usr/bin/python3
