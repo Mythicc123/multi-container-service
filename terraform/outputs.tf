@@ -21,5 +21,5 @@ output "ssh_private_key" {
 
 output "ssh_command" {
   description = "SSH command to connect to the instance"
-  value       = "ssh -i ~/.ssh/multi-container-key ubuntu@${aws_instance.app_server.public_ip}"
+  value       = "ssh -i /tmp/ec2_key ubuntu@${aws_instance.app_server.public_ip}"
 }

@@ -84,8 +84,8 @@ resource "tls_private_key" "app" {
 }
 
 resource "aws_key_pair" "app" {
-  key_name   = "${var.project_name}-key"
-  public_key = tls_private_key.app.public_key_openssh
+  key_name_prefix = "${var.project_name}-key-"
+  public_key     = tls_private_key.app.public_key_openssh
 }
 
 # ─── EC2 Instance ────────────────────────────────────────────────────────────
