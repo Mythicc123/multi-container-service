@@ -48,6 +48,15 @@
         owner: ubuntu
         group: docker
 
+    - name: Create .env file with Docker image
+      ansible.builtin.copy:
+        dest: "{{ app_directory }}/.env"
+        content: |
+          DOCKER_IMAGE={{ lookup('env', 'DOCKER_IMAGE') }}
+        mode: '0644'
+        owner: ubuntu
+        group: docker
+
     - name: Copy Nginx config to server
       ansible.builtin.copy:
         src: ../nginx/nginx.conf
