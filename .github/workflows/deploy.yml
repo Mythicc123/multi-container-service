@@ -33,23 +33,23 @@ jobs:
         run: terraform plan -out=tfplan
         env:
           TF_VAR_ami_id: ${{ secrets.AMI_ID }}
-          TF_VAR_key_pair_name: ${{ secrets.KEY_PAIR_NAME }}
 
       - name: Terraform Apply
         working-directory: terraform
         run: terraform apply -auto-approve tfplan
         env:
           TF_VAR_ami_id: ${{ secrets.AMI_ID }}
-          TF_VAR_key_pair_name: ${{ secrets.KEY_PAIR_NAME }}
 
-      - name: Get EC2 IP and SSH key
+      - name: Get instance IP
         id: ec2
         working-directory: terraform
         run: |
           IP=$(terraform output -raw instance_public_ip)
-          KEY=$(terraform output -raw ssh_private_key)
           echo "ip=$IP" >> $GITHUB_OUTPUT
-          echo "key=$KEY" >> $GITHUB_OUTPUT
+
+      - name: Save SSH private key to file
+        working-directory: terraform
+        run: terraform output -raw ssh_private_key > /tmp/ec2_key && chmod 600 /tmp/ec2_key
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -68,11 +68,6 @@ jobs:
           [servers:vars]
           ansible_python_interpreter=/usr/bin/python3
           EOF
-
-      - name: Create SSH key file
-        run: |
-          echo "${{ steps.ec2.outputs.key }}" > /tmp/ec2_key
-          chmod 600 /tmp/ec2_key
 
       - name: Install Ansible Galaxy collections
         run: ansible-galaxy collection install community.docker
