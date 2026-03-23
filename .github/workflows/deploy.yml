@@ -90,4 +90,12 @@ jobs:
           curl -f "http://${{ steps.ec2.outputs.ip }}/health" \
             && echo "" \
             && echo "Deployment successful!" \
-            || echo "Health check failed — check logs on the server"
+            || echo "Health check failed — checking server logs..."
+
+      - name: Debug: check Docker containers
+        if: always()
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+              -i /tmp/ec2_key \
+              ubuntu@${{ steps.ec2.outputs.ip }} \
+              "docker ps -a && docker compose -f /opt/multi-container-service/docker-compose.yml logs --tail=20"
