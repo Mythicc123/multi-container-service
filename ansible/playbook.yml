@@ -78,7 +78,8 @@
 
     - name: Wait for API to be healthy
       ansible.builtin.wait_for:
-        url: "http://localhost/health"
+        host: "localhost"
+        port: 80
         delay: 10
         timeout: 60
         state: started
