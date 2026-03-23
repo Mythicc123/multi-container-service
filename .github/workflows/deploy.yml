@@ -1,0 +1,86 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: terraform
+        run: terraform plan -out=tfplan
+        env:
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve tfplan
+        env:
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+
+      - name: Get EC2 IP
+        id: ec2
+        working-directory: terraform
+        run: |
+          IP=$(terraform output -raw instance_public_ip)
+          echo "ip=$IP" >> $GITHUB_OUTPUT
+
+      - name: Setup Python (for Ansible)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible
+        run: pip install ansible ansible-core
+
+      - name: Add EC2 host to inventory
+        run: |
+          echo "[servers]" >> ansible/inventory_tmp.ini
+          echo "app-server ansible_host=${{ steps.ec2.outputs.ip }} ansible_user=ec2-user ansible_ssh_private_key_file=/tmp/ec2_key" >> ansible/inventory_tmp.ini
+          echo "[servers:vars]" >> ansible/inventory_tmp.ini
+          echo "ansible_python_interpreter=/usr/bin/python3" >> ansible/inventory_tmp.ini
+
+      - name: Create SSH key file
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/ec2_key
+          chmod 600 /tmp/ec2_key
+
+      - name: Install Ansible Galaxy collections
+        run: ansible-galaxy collection install community.docker
+
+      - name: Run Ansible playbook
+        working-directory: ansible
+        run: |
+          ANSIBLE_INVENTORY=inventory_tmp.ini \
+          DOCKER_IMAGE=${{ secrets.DOCKER_USERNAME }}/multi-container-service:latest \
+          ansible-playbook -i inventory_tmp.ini playbook.yml
+        env:
+          DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/multi-container-service:latest
+
+      - name: Verify deployment
+        run: |
+          echo "Waiting for server to be ready..."
+          sleep 30
+          curl -f http://${{ steps.ec2.outputs.ip }}/health || echo "Health check failed"
