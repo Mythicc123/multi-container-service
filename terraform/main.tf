@@ -23,6 +23,10 @@ data "aws_subnet" "default" {
     name   = "vpc-id"
     values = [data.aws_vpc.default.id]
   }
+  filter {
+    name   = "availabilityZone"
+    values = ["${var.aws_region}a"]
+  }
 }
 
 # ─── Security Group ──────────────────────────────────────────────────────────
