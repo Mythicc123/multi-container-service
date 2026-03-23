@@ -29,4 +29,23 @@ const start = async () => {
   }
 };
 
-start();
+// Only start the server when running directly (not when imported for testing)
+if (require.main === module) {
+  start();
+}
+
+module.exports = app;
+module.exports.start = start;
+
+  } catch (err) {
+    console.error('Failed to connect to MongoDB:', err.message);
+    process.exit(1);
+  }
+};
+
+// Only start the server when running directly (not when imported for testing)
+if (require.main === module) {
+  start();
+}
+
+module.exports = app;
