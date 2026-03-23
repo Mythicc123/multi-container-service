@@ -42,12 +42,14 @@ jobs:
           TF_VAR_ami_id: ${{ secrets.AMI_ID }}
           TF_VAR_key_pair_name: ${{ secrets.KEY_PAIR_NAME }}
 
-      - name: Get EC2 IP
+      - name: Get EC2 IP and SSH key
         id: ec2
         working-directory: terraform
         run: |
           IP=$(terraform output -raw instance_public_ip)
+          KEY=$(terraform output -raw ssh_private_key)
           echo "ip=$IP" >> $GITHUB_OUTPUT
+          echo "key=$KEY" >> $GITHUB_OUTPUT
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -69,7 +71,7 @@ jobs:
 
       - name: Create SSH key file
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > /tmp/ec2_key
+          echo "${{ steps.ec2.outputs.key }}" > /tmp/ec2_key
           chmod 600 /tmp/ec2_key
 
       - name: Install Ansible Galaxy collections

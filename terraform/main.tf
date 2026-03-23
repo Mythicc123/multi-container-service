@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
   }
 }
 
@@ -72,12 +76,24 @@ resource "aws_security_group" "app" {
   }
 }
 
+# ─── SSH Key Pair ───────────────────────────────────────────────────────────
+
+resource "tls_private_key" "app" {
+  algorithm = "RSA"
+  rsa_bits = 4096
+}
+
+resource "aws_key_pair" "app" {
+  key_name   = "${var.project_name}-key"
+  public_key = tls_private_key.app.public_key_openssh
+}
+
 # ─── EC2 Instance ────────────────────────────────────────────────────────────
 
 resource "aws_instance" "app_server" {
   ami           = var.ami_id
   instance_type = var.instance_type
-  key_name      = var.key_pair_name
+  key_name      = aws_key_pair.app.key_name
   subnet_id     = data.aws_subnet.default.id
 
   vpc_security_group_ids = [aws_security_group.app.id]

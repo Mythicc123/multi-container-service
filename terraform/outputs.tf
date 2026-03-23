@@ -13,7 +13,13 @@ output "instance_id" {
   value       = aws_instance.app_server.id
 }
 
+output "ssh_private_key" {
+  description = "SSH private key for connecting to the instance"
+  value       = tls_private_key.app.private_key_pem
+  sensitive   = true
+}
+
 output "ssh_command" {
   description = "SSH command to connect to the instance"
-  value       = "ssh -i ~/.ssh/id_rsa ubuntu@${aws_instance.app_server.public_ip}"
+  value       = "ssh -i ~/.ssh/multi-container-key ubuntu@${aws_instance.app_server.public_ip}"
 }
