@@ -13,61 +13,24 @@ provider "aws" {
   region = var.aws_region
 }
 
-# ─── VPC ──────────────────────────────────────────────────────────────────────
-
-resource "aws_vpc" "main" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_hostnames = true
-  enable_dns_support   = true
-
-  tags = {
-    Name = "${var.project_name}-vpc"
-  }
+# Use the default VPC in the region
+data "aws_vpc" "default" {
+  default = true
 }
 
-resource "aws_subnet" "public" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block             = "10.0.1.0/24"
-  availability_zone       = "${var.aws_region}a"
-  map_public_ip_on_launch = true
-
-  tags = {
-    Name = "${var.project_name}-subnet"
+data "aws_subnet" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
   }
-}
-
-resource "aws_internet_gateway" "main" {
-  vpc_id = aws_vpc.main.id
-
-  tags = {
-    Name = "${var.project_name}-igw"
-  }
-}
-
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id  = aws_internet_gateway.main.id
-  }
-
-  tags = {
-    Name = "${var.project_name}-rt"
-  }
-}
-
-resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public.id
-  route_table_id = aws_route_table.public.id
 }
 
 # ─── Security Group ──────────────────────────────────────────────────────────
 
 resource "aws_security_group" "app" {
   name        = "${var.project_name}-sg"
-  description = "Security group for the app server"
-  vpc_id      = aws_vpc.main.id
+  description = "Allow HTTP, HTTPS, SSH and Docker inbound traffic"
+  vpc_id      = data.aws_vpc.default.id
 
   ingress {
     description = "SSH"
@@ -105,35 +68,38 @@ resource "aws_security_group" "app" {
   }
 }
 
-# ─── EC2 ──────────────────────────────────────────────────────────────────────
-
-resource "aws_key_pair" "app_key" {
-  key_name   = "${var.project_name}-key"
-  public_key = var.ssh_public_key
-}
+# ─── EC2 Instance ────────────────────────────────────────────────────────────
 
 resource "aws_instance" "app_server" {
   ami           = var.ami_id
   instance_type = var.instance_type
-  subnet_id     = aws_subnet.public.id
-
-  key_name = aws_key_pair.app_key.key_name
+  key_name      = var.key_pair_name
+  subnet_id     = data.aws_subnet.default.id
 
   vpc_security_group_ids = [aws_security_group.app.id]
 
+  # Install Docker and Docker Compose on first boot
   user_data = <<-EOF
               #!/bin/bash
-              yum update -y
-              yum install -y docker
+              apt-get update -y
+              apt-get install -y docker.io docker-compose-v2 nginx
               systemctl start docker
               systemctl enable docker
-              usermod -aG docker ec2-user
-              curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-              chmod +x /usr/local/bin/docker-compose
-              ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+              usermod -aG docker ubuntu
               EOF
 
   tags = {
     Name = "${var.project_name}-server"
+  }
+}
+
+# ─── Elastic IP ──────────────────────────────────────────────────────────────
+
+resource "aws_eip" "app" {
+  instance = aws_instance.app_server.id
+  domain   = "vpc"
+
+  tags = {
+    Name = "${var.project_name}-eip"
   }
 }

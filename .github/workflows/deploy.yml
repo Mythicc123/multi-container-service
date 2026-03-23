@@ -17,7 +17,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-southeast-2' }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -32,13 +32,15 @@ jobs:
         working-directory: terraform
         run: terraform plan -out=tfplan
         env:
-          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_ami_id: ${{ secrets.AMI_ID }}
+          TF_VAR_key_pair_name: ${{ secrets.KEY_PAIR_NAME }}
 
       - name: Terraform Apply
         working-directory: terraform
         run: terraform apply -auto-approve tfplan
         env:
-          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_ami_id: ${{ secrets.AMI_ID }}
+          TF_VAR_key_pair_name: ${{ secrets.KEY_PAIR_NAME }}
 
       - name: Get EC2 IP
         id: ec2
@@ -47,7 +49,7 @@ jobs:
           IP=$(terraform output -raw instance_public_ip)
           echo "ip=$IP" >> $GITHUB_OUTPUT
 
-      - name: Setup Python (for Ansible)
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -57,10 +59,13 @@ jobs:
 
       - name: Add EC2 host to inventory
         run: |
-          echo "[servers]" >> ansible/inventory_tmp.ini
-          echo "app-server ansible_host=${{ steps.ec2.outputs.ip }} ansible_user=ec2-user ansible_ssh_private_key_file=/tmp/ec2_key" >> ansible/inventory_tmp.ini
-          echo "[servers:vars]" >> ansible/inventory_tmp.ini
-          echo "ansible_python_interpreter=/usr/bin/python3" >> ansible/inventory_tmp.ini
+          cat > /tmp/ansible_inventory << EOF
+          [servers]
+          app-server ansible_host=${{ steps.ec2.outputs.ip }} ansible_user=ubuntu ansible_ssh_private_key_file=/tmp/ec2_key
+
+          [servers:vars]
+          ansible_python_interpreter=/usr/bin/python3
+          EOF
 
       - name: Create SSH key file
         run: |
@@ -71,16 +76,21 @@ jobs:
         run: ansible-galaxy collection install community.docker
 
       - name: Run Ansible playbook
-        working-directory: ansible
         run: |
-          ANSIBLE_INVENTORY=inventory_tmp.ini \
-          DOCKER_IMAGE=${{ secrets.DOCKER_USERNAME }}/multi-container-service:latest \
-          ansible-playbook -i inventory_tmp.ini playbook.yml
+          DOCKER_IMAGE="${{ secrets.DOCKER_USERNAME }}/multi-container-service" \
+          DOCKER_USERNAME="${{ secrets.DOCKER_USERNAME }}" \
+          DOCKER_PASSWORD="${{ secrets.DOCKER_PASSWORD }}" \
+          ansible-playbook -i /tmp/ansible_inventory ansible/playbook.yml
         env:
-          DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/multi-container-service:latest
+          DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/multi-container-service
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Verify deployment
         run: |
-          echo "Waiting for server to be ready..."
-          sleep 30
-          curl -f http://${{ steps.ec2.outputs.ip }}/health || echo "Health check failed"
+          echo "Waiting for API to be ready..."
+          sleep 15
+          curl -f "http://${{ steps.ec2.outputs.ip }}/health" \
+            && echo "" \
+            && echo "Deployment successful!" \
+            || echo "Health check failed — check logs on the server"

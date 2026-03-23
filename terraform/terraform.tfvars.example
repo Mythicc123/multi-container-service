@@ -1,6 +1,6 @@
-aws_region    = "us-east-1"
-project_name  = "multi-container-service"
-instance_type = "t3.micro"
-ami_id        = "ami-0c55b159cbfafe1f0" # Amazon Linux 2023 (update for your region)
-ssh_public_key = "ssh-rsa AAAA..."
-my_ip         = "203.0.113.0/32" # Replace with your IP in CIDR format
+aws_region     = "ap-southeast-2"
+project_name   = "multi-container-service"
+instance_type  = "t3.micro"
+ami_id         = ""  # REQUIRED: Ubuntu 22.04 LTS AMI ID for ap-southeast-2
+key_pair_name  = ""  # REQUIRED: Name of your EC2 key pair (create at EC2 → Key Pairs)
+my_ip          = "0.0.0.0/0"  # Replace with your IP for tighter security

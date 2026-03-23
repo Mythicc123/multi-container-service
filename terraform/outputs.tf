@@ -1,6 +1,11 @@
 output "instance_public_ip" {
-  description = "Public IP address of the EC2 instance"
-  value       = aws_instance.app_server.public_ip
+  description = "Public IP address of the EC2 instance (Elastic IP)"
+  value       = aws_eip.app.public_ip
+}
+
+output "instance_private_ip" {
+  description = "Private IP address of the EC2 instance"
+  value       = aws_instance.app_server.private_ip
 }
 
 output "instance_id" {
@@ -8,7 +13,7 @@ output "instance_id" {
   value       = aws_instance.app_server.id
 }
 
-output "vpc_id" {
-  description = "ID of the VPC"
-  value       = aws_vpc.main.id
+output "ssh_command" {
+  description = "SSH command to connect to the instance"
+  value       = "ssh -i ~/.ssh/id_rsa ubuntu@${aws_eip.app.public_ip}"
 }

@@ -1,7 +1,7 @@
 variable "aws_region" {
-  description = "AWS region for resources"
+  description = "AWS region"
   type        = string
-  default     = "us-east-1"
+  default     = "ap-southeast-2"
 }
 
 variable "project_name" {
@@ -17,18 +17,19 @@ variable "instance_type" {
 }
 
 variable "ami_id" {
-  description = "AMI ID (Amazon Linux 2023)"
+  description = "Ubuntu 22.04 LTS AMI ID for your region. Find it at: AWS EC2 → Instances → Launch an instance → Ubuntu 22.04 LTS"
   type        = string
-  default     = "ami-0c55b159cbfafe1f0" # us-east-1 Amazon Linux 2023
+  default     = "" # REQUIRED — must be set in terraform.tfvars
 }
 
-variable "ssh_public_key" {
-  description = "SSH public key for ec2-user"
+variable "key_pair_name" {
+  description = "Name of an existing EC2 key pair (must exist in AWS under EC2 → Key Pairs)"
   type        = string
+  default     = "" # REQUIRED — must be set in terraform.tfvars
 }
 
 variable "my_ip" {
-  description = "Your IP address for SSH access restriction (CIDR)"
+  description = "Your IP address for SSH access restriction (CIDR). Use 0.0.0.0/0 for anywhere."
   type        = string
   default     = "0.0.0.0/0"
 }
