@@ -32,7 +32,7 @@ data "aws_subnet" "default" {
 # ─── Security Group ──────────────────────────────────────────────────────────
 
 resource "aws_security_group" "app" {
-  name        = "${var.project_name}-sg"
+  name_prefix = "${var.project_name}-sg-"
   description = "Allow HTTP, HTTPS, SSH and Docker inbound traffic"
   vpc_id      = data.aws_vpc.default.id
 
