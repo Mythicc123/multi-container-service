@@ -97,13 +97,3 @@ resource "aws_instance" "app_server" {
   }
 }
 
-# ─── Elastic IP ──────────────────────────────────────────────────────────────
-
-resource "aws_eip" "app" {
-  instance = aws_instance.app_server.id
-  domain   = "vpc"
-
-  tags = {
-    Name = "${var.project_name}-eip"
-  }
-}
