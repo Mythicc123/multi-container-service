@@ -144,8 +144,11 @@ jobs:
 
       - name: Create SSH key file
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/ec2_key
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/ec2_key
           chmod 600 /tmp/ec2_key
+          # Ensure key is in PEM format (libcrypto error often means OpenSSH key format)
+          ssh-keygen -p -m PEM -f /tmp/ec2_key -P "" -N "" 2>/dev/null || true
 
       - name: Install Ansible Galaxy collections
         run: ansible-galaxy collection install community.docker
