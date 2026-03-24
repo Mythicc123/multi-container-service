@@ -144,13 +144,13 @@ jobs:
 
       - name: Create SSH key file
         run: |
-          # Write SSH key preserving exact content
-          tee /tmp/ec2_key << SSHKEY
-          ${{ secrets.SSH_PRIVATE_KEY }}
-          SSHKEY
+          # SSH key secret must be base64-encoded in GitHub Secrets
+          # To encode: cat private_key.pem | base64 -w0
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > /tmp/ec2_key
           chmod 600 /tmp/ec2_key
-          # Verify key is valid
-          ssh-keygen -l -f /tmp/ec2_key && echo "Key is valid"
+          # Verify key is usable
+          ssh-keygen -y -f /tmp/ec2_key > /dev/null && echo "Key is valid"
 
       - name: Install Ansible Galaxy collections
         run: ansible-galaxy collection install community.docker
