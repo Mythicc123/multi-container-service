@@ -35,6 +35,7 @@ jobs:
         env:
           TF_VAR_ami_id: ${{ secrets.AMI_ID }}
           TF_VAR_key_pair_name: ${{ secrets.KEY_PAIR_NAME }}
+          TF_VAR_subnet_id: ${{ secrets.SUBNET_ID }}
 
       - name: Terraform Apply
         working-directory: terraform
@@ -42,6 +43,7 @@ jobs:
         env:
           TF_VAR_ami_id: ${{ secrets.AMI_ID }}
           TF_VAR_key_pair_name: ${{ secrets.KEY_PAIR_NAME }}
+          TF_VAR_subnet_id: ${{ secrets.SUBNET_ID }}
 
       - name: Get EC2 IP
         id: ec2

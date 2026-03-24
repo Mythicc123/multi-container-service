@@ -33,3 +33,9 @@ variable "my_ip" {
   type        = string
   default     = "0.0.0.0/0"
 }
+
+variable "subnet_id" {
+  description = "Subnet ID for the EC2 instance. Find it in AWS EC2 → Subnets. Use a public subnet in your region."
+  type        = string
+  default     = "" # REQUIRED — must be set in terraform.tfvars
+}

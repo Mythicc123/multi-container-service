@@ -18,17 +18,6 @@ data "aws_vpc" "default" {
   default = true
 }
 
-data "aws_subnet" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-  filter {
-    name   = "availability-zone"
-    values = ["${data.aws_vpc.default.region}a"]
-  }
-}
-
 # ─── Security Group ──────────────────────────────────────────────────────────
 
 resource "aws_security_group" "app" {
@@ -78,7 +67,7 @@ resource "aws_instance" "app_server" {
   ami           = var.ami_id
   instance_type = var.instance_type
   key_name      = var.key_pair_name
-  subnet_id     = data.aws_subnet.default.id
+  subnet_id     = var.subnet_id
 
   vpc_security_group_ids = [aws_security_group.app.id]
 
