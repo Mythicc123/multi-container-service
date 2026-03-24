@@ -144,11 +144,13 @@ jobs:
 
       - name: Create SSH key file
         run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/ec2_key
+          # Write SSH key preserving exact content
+          tee /tmp/ec2_key << SSHKEY
+          ${{ secrets.SSH_PRIVATE_KEY }}
+          SSHKEY
           chmod 600 /tmp/ec2_key
-          # Ensure key is in PEM format (libcrypto error often means OpenSSH key format)
-          ssh-keygen -p -m PEM -f /tmp/ec2_key -P "" -N "" 2>/dev/null || true
+          # Verify key is valid
+          ssh-keygen -l -f /tmp/ec2_key && echo "Key is valid"
 
       - name: Install Ansible Galaxy collections
         run: ansible-galaxy collection install community.docker
