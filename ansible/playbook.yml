@@ -77,6 +77,13 @@
         username: "{{ lookup('env', 'DOCKER_USERNAME') }}"
         password: "{{ lookup('env', 'DOCKER_PASSWORD') }}"
 
+    - name: Stop existing containers (keep volumes)
+      ansible.builtin.shell:
+        cmd: docker compose -f docker-compose.yml down || true
+        executable: bash
+        chdir: "{{ app_directory }}"
+      changed_when: false
+
     - name: Pull latest image and start containers
       community.docker.docker_compose_v2:
         project_src: "{{ app_directory }}"
