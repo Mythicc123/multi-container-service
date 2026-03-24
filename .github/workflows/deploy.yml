@@ -143,14 +143,11 @@ jobs:
           EOF
 
       - name: Create SSH key file
-        id: create_key
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          # SSH key secret must be base64-encoded in GitHub Secrets
-          # To encode: cat private_key.pem | base64 -w0
           mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" | base64 -d > /tmp/ec2_key
+          printf '%s\n' "$SSH_PRIVATE_KEY" > /tmp/ec2_key
           chmod 600 /tmp/ec2_key
           # Verify key
           ssh-keygen -y -f /tmp/ec2_key > /dev/null && echo "Key valid"
