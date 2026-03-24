@@ -81,8 +81,8 @@
       ansible.builtin.shell:
         cmd: |
           docker compose -p multi-container-service -f docker-compose.yml rm -sf 2>/dev/null || true
-          # Kill any container still using port 80
-          docker ps --format '{{.Names}} {{.Ports}}' | grep ':80/' | awk '{print $1}' | xargs -r docker rm -f 2>/dev/null || true
+          # Kill any container still using port 80 (escape Jinja2 braces with $)
+          docker ps --format '$${{.Names}} $${{.Ports}}' | grep ':80/' | awk '{print $1}' | xargs -r docker rm -f 2>/dev/null || true
         executable: bash
         chdir: "{{ app_directory }}"
       changed_when: false
