@@ -77,9 +77,10 @@
         username: "{{ lookup('env', 'DOCKER_USERNAME') }}"
         password: "{{ lookup('env', 'DOCKER_PASSWORD') }}"
 
-    - name: Stop existing containers (keep volumes)
+    - name: Remove all existing project containers
       ansible.builtin.shell:
-        cmd: docker compose -f docker-compose.yml down || true
+        cmd: |
+          docker compose -p multi-container-service -f docker-compose.yml rm -sf 2>/dev/null || true
         executable: bash
         chdir: "{{ app_directory }}"
       changed_when: false
