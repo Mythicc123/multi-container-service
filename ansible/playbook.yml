@@ -4,6 +4,7 @@
   become: true
   vars:
     app_directory: /opt/multi-container-service
+    docker_image: "{{ lookup('env', 'DOCKER_IMAGE') }}"
 
   tasks:
     - name: Wait for apt lock to be released (user_data may still be running)
@@ -43,6 +44,15 @@
         path: "{{ app_directory }}"
         state: directory
         mode: '0755'
+        owner: ubuntu
+        group: docker
+
+    - name: Create .env with Docker image reference
+      ansible.builtin.copy:
+        content: |
+          DOCKER_IMAGE={{ docker_image }}
+        dest: "{{ app_directory }}/.env"
+        mode: '0644'
         owner: ubuntu
         group: docker
 
