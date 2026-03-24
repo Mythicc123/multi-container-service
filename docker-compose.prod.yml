@@ -3,6 +3,8 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
+    expose:
+      - "3000"
     environment:
       - MONGO_URL=mongodb://mongo:27017/todos
       - PORT=3000
@@ -22,6 +24,17 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_started
+    restart: always
 
 volumes:
   mongo_data:

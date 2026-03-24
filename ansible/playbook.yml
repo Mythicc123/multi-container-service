@@ -4,7 +4,6 @@
   become: true
   vars:
     app_directory: /opt/multi-container-service
-    docker_compose_version: "v2"
 
   tasks:
     - name: Update apt cache
@@ -66,23 +65,31 @@
 
     - name: Copy docker-compose.prod.yml to server
       ansible.builtin.copy:
-        src: ../docker-compose.prod.yml
+        src: "{{ playbook_dir }}/../docker-compose.prod.yml"
         dest: "{{ app_directory }}/docker-compose.yml"
         mode: '0644'
         owner: ubuntu
         group: docker
 
-    - name: Copy Nginx config to server
+    - name: Copy nginx config to server (for Docker volume mount)
       ansible.builtin.copy:
-        src: ../nginx/nginx.conf
-        dest: /etc/nginx/sites-available/default
+        src: "{{ playbook_dir }}/../nginx/nginx.conf"
+        dest: "{{ app_directory }}/nginx.conf"
+        mode: '0644'
+        owner: ubuntu
+        group: docker
+
+    - name: Copy Nginx config for host-based nginx (fallback)
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../nginx/nginx.conf"
+        dest: /etc/nginx/sites-available/multi-container
         mode: '0644'
       notify: Reload Nginx
 
     - name: Enable Nginx site
       ansible.builtin.file:
-        src: /etc/nginx/sites-available/default
-        dest: /etc/nginx/sites-enabled/default
+        src: /etc/nginx/sites-available/multi-container
+        dest: /etc/nginx/sites-enabled/multi-container
         state: link
       notify: Reload Nginx
 
@@ -95,18 +102,13 @@
         username: "{{ lookup('env', 'DOCKER_USERNAME') }}"
         password: "{{ lookup('env', 'DOCKER_PASSWORD') }}"
 
-    - name: Pull Docker image
-      community.docker.docker_image:
-        name: "{{ lookup('env', 'DOCKER_IMAGE') }}"
-        source: pull
-        tag: latest
-
-    - name: Run docker compose up
+    - name: Pull latest image and start containers
       community.docker.docker_compose_v2:
         project_src: "{{ app_directory }}"
         files:
           - docker-compose.yml
-        state: present
+        state: started
+        pull: missing
 
     - name: Wait for API to be healthy
       ansible.builtin.wait_for:
@@ -120,3 +122,8 @@
       ansible.builtin.systemd:
         name: nginx
         state: reloaded
+
+    - name: Restart Nginx
+      ansible.builtin.systemd:
+        name: nginx
+        state: restarted
