@@ -132,6 +132,16 @@ jobs:
       - name: Install Ansible
         run: pip install ansible ansible-core
 
+      - name: Create SSH key file
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" | base64 -d > /tmp/ec2_key
+          chmod 600 /tmp/ec2_key
+          # Quick connectivity test
+          timeout 10 ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -i /tmp/ec2_key ubuntu@${{ steps.ec2.outputs.ip }} echo "SSH OK" && echo "SSH connection successful"
+
       - name: Add EC2 host to inventory
         run: |
           cat > /tmp/ansible_inventory << EOF
@@ -141,16 +151,6 @@ jobs:
           [servers:vars]
           ansible_python_interpreter=/usr/bin/python3
           EOF
-
-      - name: Create SSH key file
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > /tmp/ec2_key
-          chmod 600 /tmp/ec2_key
-          # Verify key
-          ssh-keygen -y -f /tmp/ec2_key > /dev/null && echo "Key valid"
 
       - name: Install Ansible Galaxy collections
         run: ansible-galaxy collection install community.docker
