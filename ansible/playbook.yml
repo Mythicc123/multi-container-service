@@ -97,11 +97,19 @@
         pull: always
 
     - name: Wait for API to be healthy
-      ansible.builtin.wait_for:
-        url: "http://localhost/health"
-        delay: 15
-        timeout: 120
-        state: started
+      ansible.builtin.shell:
+        cmd: |
+          for i in $(seq 1 24); do
+            if curl -sf http://localhost/health > /dev/null 2>&1; then
+              echo "API is healthy"
+              exit 0
+            fi
+            echo "Waiting for API... ($i/24)"
+            sleep 5
+          done
+          echo "API health check timed out"
+          exit 1
+        executable: bash
 
   handlers:
     - name: Reload Nginx
