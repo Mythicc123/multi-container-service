@@ -72,8 +72,8 @@
         project_src: "{{ app_directory }}"
         files:
           - docker-compose.yml
-        state: started
-        pull: missing
+        state: present
+        pull: always
 
     - name: Wait for API to be healthy
       ansible.builtin.wait_for:
