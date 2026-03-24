@@ -20,6 +20,22 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION || 'ap-southeast-2' }}
 
+      - name: Import existing security group if it exists
+        id: import_sg
+        run: |
+          SG_ID=$(aws ec2 describe-security-groups \
+            --filters "Name=group-name,Values=${PROJECT_NAME}-sg" \
+            --query 'SecurityGroups[0].GroupId' \
+            --output text 2>/dev/null)
+          if [ -n "$SG_ID" ] && [ "$SG_ID" != "None" ]; then
+            echo "Found existing security group: $SG_ID"
+            echo "importing=true" >> $GITHUB_OUTPUT
+          else
+            echo "importing=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          PROJECT_NAME: multi-container-service
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -28,6 +44,62 @@ jobs:
       - name: Terraform Init
         working-directory: terraform
         run: terraform init
+
+      - name: Import existing security group into Terraform state
+        if: steps.import_sg.outputs.importing == 'true'
+        working-directory: terraform
+        run: |
+          SG_ID=$(aws ec2 describe-security-groups \
+            --filters "Name=group-name,Values=${PROJECT_NAME}-sg" \
+            --query 'SecurityGroups[0].GroupId' \
+            --output text)
+          terraform import aws_security_group.app $SG_ID
+        env:
+          PROJECT_NAME: multi-container-service
+
+      - name: Import existing EC2 instance if it exists
+        id: import_ec2
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=${PROJECT_NAME}-server" "Name=instance-state-name,Values=running,stopped,pending" \
+            --query 'Reservations[0].Instances[0].InstanceId' \
+            --output text 2>/dev/null)
+          if [ -n "$INSTANCE_ID" ] && [ "$INSTANCE_ID" != "None" ]; then
+            echo "Found existing EC2 instance: $INSTANCE_ID"
+            echo "importing=true" >> $GITHUB_OUTPUT
+            echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+          else
+            echo "importing=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          PROJECT_NAME: multi-container-service
+
+      - name: Import existing EC2 instance into Terraform state
+        if: steps.import_ec2.outputs.importing == 'true'
+        working-directory: terraform
+        run: terraform import aws_instance.app_server ${{ steps.import_ec2.outputs.instance_id }}
+
+      - name: Import existing Elastic IP if it exists
+        id: import_eip
+        run: |
+          EIP=$(aws ec2 describe-addresses \
+            --filters "Name=tag:Name,Values=${PROJECT_NAME}-eip" \
+            --query 'Addresses[0].AllocationId' \
+            --output text 2>/dev/null)
+          if [ -n "$EIP" ] && [ "$EIP" != "None" ]; then
+            echo "Found existing Elastic IP: $EIP"
+            echo "importing=true" >> $GITHUB_OUTPUT
+            echo "eip_allocation_id=$EIP" >> $GITHUB_OUTPUT
+          else
+            echo "importing=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          PROJECT_NAME: multi-container-service
+
+      - name: Import existing Elastic IP into Terraform state
+        if: steps.import_eip.outputs.importing == 'true'
+        working-directory: terraform
+        run: terraform import aws_eip.app ${{ steps.import_eip.outputs.eip_allocation_id }}
 
       - name: Terraform Plan
         working-directory: terraform

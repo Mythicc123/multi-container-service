@@ -25,6 +25,10 @@ resource "aws_security_group" "app" {
   description = "Allow HTTP, HTTPS, SSH and Docker inbound traffic"
   vpc_id      = data.aws_vpc.default.id
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   ingress {
     description = "SSH"
     from_port   = 22
