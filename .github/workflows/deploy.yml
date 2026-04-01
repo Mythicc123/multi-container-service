@@ -58,6 +58,26 @@ jobs:
           ssh-keygen -y -f /tmp/ec2_key | md5sum
           echo "Expected fingerprint: f1:2b:1e:c1:55:5b:6d:c4:18:e5:31:e9:30:e4:ba:2e:19:c4:df:14"
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/multi-container-service:latest
+            ${{ secrets.DOCKER_USERNAME }}/multi-container-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
