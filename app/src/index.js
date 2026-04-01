@@ -8,9 +8,17 @@ const app = express();
 
 app.use(express.json());
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+// Health check - verifies MongoDB connectivity
+app.get('/health', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ status: 'error', message: 'MongoDB not connected' });
+    }
+    await mongoose.connection.db.adminCommand({ ping: 1 });
+    res.json({ status: 'ok', mongo: 'connected' });
+  } catch (err) {
+    res.status(503).json({ status: 'error', message: 'MongoDB ping failed' });
+  }
 });
 
 // Todo routes
