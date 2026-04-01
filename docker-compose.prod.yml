@@ -1,6 +1,8 @@
 services:
   api:
     image: ${DOCKER_IMAGE}
+    ports:
+      - "3000:3000"
     environment:
       - MONGO_URL=mongodb://mongo:27017/todos
       - PORT=3000
