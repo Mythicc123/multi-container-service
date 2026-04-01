@@ -75,7 +75,7 @@
     - name: Wait for API to be healthy
       ansible.builtin.wait_for:
         host: "localhost"
-        port: 80
+        port: 8080
         delay: 10
         timeout: 60
         state: started
