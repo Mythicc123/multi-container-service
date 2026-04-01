@@ -22,11 +22,9 @@ variable "ami_id" {
   default     = "" # REQUIRED — must be set in terraform.tfvars
 }
 
-variable "key_pair_name" {
-  description = "Name of an existing EC2 key pair (must exist in AWS under EC2 → Key Pairs)"
-  type        = string
-  default     = "" # REQUIRED — must be set in terraform.tfvars
-}
+# Note: key_pair_name is not used — the key pair is generated dynamically by
+# tls_private_key + aws_key_pair resources in main.tf. The private key is output
+# via terraform output -raw ssh_private_key and used by the Ansible playbook.
 
 variable "my_ip" {
   description = "Your IP address for SSH access restriction (CIDR). Use 0.0.0.0/0 for anywhere."
