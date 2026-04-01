@@ -14,7 +14,8 @@ app.get('/health', async (req, res) => {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({ status: 'error', message: 'MongoDB not connected' });
     }
-    await mongoose.connection.db.adminCommand({ ping: 1 });
+    // Use db.command() which works without admin privileges
+    await mongoose.connection.db.command({ ping: 1 });
     res.json({ status: 'ok', mongo: 'connected' });
   } catch (err) {
     res.status(503).json({ status: 'error', message: 'MongoDB ping failed' });
