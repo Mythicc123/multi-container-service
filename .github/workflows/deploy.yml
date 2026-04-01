@@ -95,7 +95,4 @@ jobs:
       - name: Debug: check Docker containers
         if: always()
         run: |
-          ssh -o StrictHostKeyChecking=no \
-              -i /tmp/ec2_key \
-              ubuntu@${{ steps.ec2.outputs.ip }} \
-              "docker ps -a && docker compose -f /opt/multi-container-service/docker-compose.yml logs --tail=20"
+          ssh -o StrictHostKeyChecking=no -i /tmp/ec2_key "ubuntu@${{ steps.ec2.outputs.ip }}" "docker ps -a && docker compose -f /opt/multi-container-service/docker-compose.yml logs --tail=20"
