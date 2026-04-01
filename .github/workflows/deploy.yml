@@ -61,13 +61,11 @@ jobs:
 
       - name: Add EC2 host to inventory
         run: |
-          cat > /tmp/ansible_inventory << EOF
-          [servers]
-          app-server ansible_host=${{ steps.ec2.outputs.ip }} ansible_user=ubuntu ansible_ssh_private_key_file=/tmp/ec2_key ansible_ssh_common_args='-o StrictHostKeyChecking=no'
-
-          [servers:vars]
-          ansible_python_interpreter=/usr/bin/python3
-          EOF
+          echo "[servers]" > /tmp/ansible_inventory
+          echo "app-server ansible_host=${{ steps.ec2.outputs.ip }} ansible_user=ubuntu ansible_ssh_private_key_file=/tmp/ec2_key ansible_ssh_common_args='-o StrictHostKeyChecking=no'" >> /tmp/ansible_inventory
+          echo "" >> /tmp/ansible_inventory
+          echo "[servers:vars]" >> /tmp/ansible_inventory
+          echo "ansible_python_interpreter=/usr/bin/python3" >> /tmp/ansible_inventory
 
       - name: Install Ansible Galaxy collections
         run: ansible-galaxy collection install community.docker
@@ -94,5 +92,10 @@ jobs:
 
       - name: Debug: check Docker containers
         if: always()
+        env:
+          EC2_IP: ${{ steps.ec2.outputs.ip }}
         run: |
-          ssh -o StrictHostKeyChecking=no -i /tmp/ec2_key "ubuntu@${{ steps.ec2.outputs.ip }}" "docker ps -a && docker compose -f /opt/multi-container-service/docker-compose.yml logs --tail=20"
+          echo "=== Docker containers ==="
+          ssh -o StrictHostKeyChecking=no -i /tmp/ec2_key "ubuntu@${EC2_IP}" "docker ps -a"
+          echo "=== Container logs ==="
+          ssh -o StrictHostKeyChecking=no -i /tmp/ec2_key "ubuntu@${EC2_IP}" "docker compose -f /opt/multi-container-service/docker-compose.yml logs --tail=20"
