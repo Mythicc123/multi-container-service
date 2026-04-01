@@ -7,19 +7,6 @@
     docker_compose_version: "v2"
 
   tasks:
-    - name: Update apt cache
-      ansible.builtin.apt:
-        update_cache: yes
-
-    - name: Install Docker and Nginx (if not already installed by user_data)
-      ansible.builtin.apt:
-        name:
-          - docker.io
-          - docker-compose-v2
-          - nginx
-        state: present
-      register: apt_install
-
     - name: Start and enable Docker
       ansible.builtin.systemd:
         name: docker

@@ -6,10 +6,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
-    tls = {
-      source  = "hashicorp/tls"
-      version = "~> 4.0"
-    }
   }
 }
 
@@ -22,70 +18,18 @@ data "aws_vpc" "default" {
   default = true
 }
 
-data "aws_subnet" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-  filter {
-    name   = "availabilityZone"
-    values = ["${var.aws_region}a"]
-  }
+data "aws_subnet" "app" {
+  id = "subnet-0169389af48015c56"
 }
 
-# ─── Security Group ──────────────────────────────────────────────────────────
-
-resource "aws_security_group" "app" {
-  name_prefix = "${var.project_name}-sg-"
-  description = "Allow HTTP, HTTPS, SSH and Docker inbound traffic"
-  vpc_id      = data.aws_vpc.default.id
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.my_ip]
-  }
-
-  ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTPS"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.project_name}-sg"
-  }
+# Existing key pair — managed outside of Terraform
+data "aws_key_pair" "app" {
+  key_name = "ec2-static-site-key"
 }
 
-# ─── SSH Key Pair ───────────────────────────────────────────────────────────
-
-resource "tls_private_key" "app" {
-  algorithm = "RSA"
-  rsa_bits = 4096
-}
-
-resource "aws_key_pair" "app" {
-  key_name_prefix = "${var.project_name}-key-"
-  public_key     = tls_private_key.app.public_key_openssh
+# Existing security group — managed outside of Terraform
+data "aws_security_group" "app" {
+  id = "sg-0af639883552f9a6a"
 }
 
 # ─── EC2 Instance ────────────────────────────────────────────────────────────
@@ -93,10 +37,10 @@ resource "aws_key_pair" "app" {
 resource "aws_instance" "app_server" {
   ami           = var.ami_id
   instance_type = var.instance_type
-  key_name      = aws_key_pair.app.key_name
-  subnet_id     = data.aws_subnet.default.id
+  key_name      = data.aws_key_pair.app.key_name
+  subnet_id     = data.aws_subnet.app.id
 
-  vpc_security_group_ids = [aws_security_group.app.id]
+  vpc_security_group_ids = [data.aws_security_group.app.id]
 
   # Install Docker and Docker Compose on first boot
   user_data = <<-EOF
