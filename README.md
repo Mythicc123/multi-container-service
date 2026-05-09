@@ -1,6 +1,6 @@
 # Multi-Container Todo API
 
-**Live at:** http://13.236.205.122
+🎬 **Demo available on request** — spins up in ~5 minutes via [GitHub Actions](https://github.com/Mythicc123/multi-container-service/actions/workflows/portfolio.yml)
 
 > Built following [roadmap.sh — Multi-Container Service Project](https://roadmap.sh/projects/multi-container-service)
 
